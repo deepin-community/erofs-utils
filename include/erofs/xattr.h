@@ -44,7 +44,7 @@ static inline unsigned int xattrblock_offset(struct erofs_inode *vi,
 	sizeof(struct erofs_xattr_entry) + 1; })
 
 int erofs_scan_file_xattrs(struct erofs_inode *inode);
-int erofs_prepare_xattr_ibody(struct erofs_inode *inode);
+int erofs_prepare_xattr_ibody(struct erofs_inode *inode, bool noroom);
 char *erofs_export_xattr_ibody(struct erofs_inode *inode);
 int erofs_build_shared_xattrs_from_path(struct erofs_sb_info *sbi, const char *path);
 
@@ -60,6 +60,9 @@ int erofs_set_opaque_xattr(struct erofs_inode *inode);
 void erofs_clear_opaque_xattr(struct erofs_inode *inode);
 int erofs_set_origin_xattr(struct erofs_inode *inode);
 int erofs_read_xattrs_from_disk(struct erofs_inode *inode);
+
+bool erofs_xattr_prefix_matches(const char *key, unsigned int *index,
+				unsigned int *len);
 
 #ifdef __cplusplus
 }
