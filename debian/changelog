@@ -1,14 +1,30 @@
-erofs-utils (1.7.1-1deepin2) unstable; urgency=medium
+erofs-utils (1.8.2-2deepin1) unstable; urgency=medium
 
-  * add patch to fix undefined symbol of liberofsfuse
+  * Add deepin patch.
 
- -- ComixHe <heyuming@deepin.org>  Tue, 11 Jun 2024 11:56:29 +0800
+ -- xiangzelong <xiangzelong@deepin.org>  Fri, 13 Dec 2024 16:27:30 +0800
 
-erofs-utils (1.7.1-1deepin1) unstable; urgency=medium
+erofs-utils (1.8.2-2) unstable; urgency=medium
 
-  * add patch to provide static library 'liberofsfuse.a'
+  * Clean up all existing lintian issues.
 
- -- ComixHe <heyuming@deepin.org>  Tue, 04 Jun 2024 14:22:42 +0800
+ -- Gao Xiang <xiang@kernel.org>  Tue, 24 Sep 2024 23:10:00 +0800
+
+erofs-utils (1.8.2-1) unstable; urgency=medium
+
+  * New upstream release 1.8.2.
+  * Build erofs-utils (but not erofsfuse) on non-linux platforms
+    thanks to наб (closes: #1078768).
+
+ -- Gao Xiang <xiang@kernel.org>  Tue, 24 Sep 2024 00:00:00 +0800
+
+erofs-utils (1.8.1-1) unstable; urgency=medium
+
+  * New upstream release 1.8.1.
+  * Enable multi-threaded compression.
+  * Enable Zstandard compression support.
+
+ -- Gao Xiang <xiang@kernel.org>  Sat, 10 Aug 2024 00:00:00 +0800
 
 erofs-utils (1.7.1-1) unstable; urgency=medium
 

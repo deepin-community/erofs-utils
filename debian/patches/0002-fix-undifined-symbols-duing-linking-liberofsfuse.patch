@@ -1,32 +1,34 @@
-From e4c10b5436d8fc415e0451ded70cf9d77b32a987 Mon Sep 17 00:00:00 2001
-From: ComixHe <heyuming@deepin.org>
-Date: Tue, 11 Jun 2024 12:02:30 +0800
-Subject: [PATCH] fix: undifined symbols duing linking liberofsfuse
+From: ComixHe @ 2024-12-13  6:32 UTC (permalink / raw)
+
+Some of the symbols required by erofsfuse are provided by liberofs.
+When option 'enable-static-fuse' is set, all these object file should be
+exported to liberofsfuse.a
+
+https://lore.kernel.org/linux-erofs/398413dc-95ad-4ab9-a387-e44aacd68aa1@linux.alibaba.com/T/#mc3a64520a9365157dfa4ed2b5de9320757000d9e
 
 Signed-off-by: ComixHe <heyuming@deepin.org>
 ---
- fuse/Makefile.am | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ fuse/Makefile.am | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/fuse/Makefile.am b/fuse/Makefile.am
-index 5d4d3b1..f4f3a7b 100644
+index 1062b73..50186da 100644
 --- a/fuse/Makefile.am
 +++ b/fuse/Makefile.am
-@@ -10,10 +10,10 @@ erofsfuse_LDADD = $(top_builddir)/lib/liberofs.la ${libfuse_LIBS} ${liblz4_LIBS}
- 	${libselinux_LIBS} ${liblzma_LIBS} ${zlib_LIBS} ${libdeflate_LIBS}
+@@ -11,9 +11,9 @@ erofsfuse_LDADD = $(top_builddir)/lib/liberofs.la ${libfuse2_LIBS} ${libfuse3_LI
+ 	${libqpl_LIBS}
  
  if ENABLE_STATIC_FUSE
 -lib_LIBRARIES = liberofsfuse.a
 -liberofsfuse_a_SOURCES = main.c
 -liberofsfuse_a_CFLAGS  = -Wall -I$(top_srcdir)/include
--liberofsfuse_a_CFLAGS += -Dmain=erofsfuse_main -DFUSE_USE_VERSION=26 ${libfuse_CFLAGS} ${libselinux_CFLAGS}
+-liberofsfuse_a_CFLAGS += -Dmain=erofsfuse_main ${libfuse2_CFLAGS} ${libfuse3_CFLAGS} ${libselinux_CFLAGS}
+-liberofsfuse_a_LIBADD  = $(top_builddir)/lib/liberofs.la
 +lib_LTLIBRARIES = liberofsfuse.la
 +liberofsfuse_la_SOURCES = main.c
 +liberofsfuse_la_CFLAGS  = -Wall -I$(top_srcdir)/include
-+liberofsfuse_la_CFLAGS += -Dmain=erofsfuse_main -DFUSE_USE_VERSION=26 ${libfuse_CFLAGS} ${libselinux_CFLAGS}
- liberofsfuse_la_LIBADD  = $(top_builddir)/lib/liberofs.la ${libfuse_LIBS} ${liblz4_LIBS} \
-     ${libselinux_LIBS} ${liblzma_LIBS} ${zlib_LIBS} ${libdeflate_LIBS}
++liberofsfuse_la_CFLAGS += -Dmain=erofsfuse_main ${libfuse2_CFLAGS} ${libfuse3_CFLAGS} ${libselinux_CFLAGS}
++liberofsfuse_la_LIBADD  = $(top_builddir)/lib/liberofs.la
  endif
 -- 
-2.45.2
-
+2.47.1
