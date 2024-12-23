@@ -85,6 +85,7 @@ static struct option long_options[] = {
 	{"mkfs-time", no_argument, NULL, 525},
 	{"all-time", no_argument, NULL, 526},
 	{"sort", required_argument, NULL, 527},
+	{"hard-dereference", no_argument, NULL, 528},
 	{0, 0, 0, 0},
 };
 
@@ -174,6 +175,7 @@ static void usage(int argc, char **argv)
 		" --force-gid=#         set all file gids to # (# = GID)\n"
 		" --uid-offset=#        add offset # to all file uids (# = id offset)\n"
 		" --gid-offset=#        add offset # to all file gids (# = id offset)\n"
+		" --hard-dereference    dereference hardlinks, add links as separate inodes\n"
 		" --ignore-mtime        use build time instead of strict per-file modification time\n"
 		" --max-extent-bytes=#  set maximum decompressed extent size # in bytes\n"
 		" --mount-point=X       X=prefix of target fs path (default: /)\n"
@@ -617,7 +619,12 @@ static int mkfs_parse_options_cfg(int argc, char *argv[])
 			has_timestamp = true;
 			break;
 		case 'U':
-			if (erofs_uuid_parse(optarg, fixeduuid)) {
+			if (!strcmp(optarg, "clear")) {
+				memset(fixeduuid, 0, 16);
+			} else if (!strcmp(optarg, "random")) {
+				valid_fixeduuid = false;
+				break;
+			} else if (erofs_uuid_parse(optarg, fixeduuid)) {
 				erofs_err("invalid UUID %s", optarg);
 				return -EINVAL;
 			}
@@ -845,6 +852,9 @@ static int mkfs_parse_options_cfg(int argc, char *argv[])
 		case 527:
 			if (!strcmp(optarg, "none"))
 				erofstar.try_no_reorder = true;
+			break;
+		case 528:
+			cfg.c_hard_dereference = true;
 			break;
 		case 'V':
 			version();

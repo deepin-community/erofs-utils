@@ -6,6 +6,9 @@
  * with heavy changes by Gao Xiang <xiang@kernel.org>
  */
 #define _GNU_SOURCE
+#ifdef EROFS_MT_ENABLED
+#include <pthread.h>
+#endif
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -818,6 +821,7 @@ noinline:
 	bh->fsprivate = erofs_igrab(inode);
 	bh->op = &erofs_write_inode_bhops;
 	inode->bh = bh;
+	inode->i_ino[0] = ++inode->sbi->inos;  /* inode serial number */
 	return 0;
 }
 
@@ -1111,7 +1115,6 @@ struct erofs_inode *erofs_new_inode(struct erofs_sb_info *sbi)
 		return ERR_PTR(-ENOMEM);
 
 	inode->sbi = sbi;
-	inode->i_ino[0] = sbi->inos++;	/* inode serial number */
 	inode->i_count = 1;
 	inode->datalayout = EROFS_INODE_FLAT_PLAIN;
 
@@ -1138,7 +1141,7 @@ static struct erofs_inode *erofs_iget_from_srcpath(struct erofs_sb_info *sbi,
 	 * hard-link, just return it. Also don't lookup for directories
 	 * since hard-link directory isn't allowed.
 	 */
-	if (!S_ISDIR(st.st_mode)) {
+	if (!S_ISDIR(st.st_mode) && (!cfg.c_hard_dereference)) {
 		inode = erofs_iget(st.st_dev, st.st_ino);
 		if (inode)
 			return inode;
@@ -1195,7 +1198,8 @@ static int erofs_inode_reserve_data_blocks(struct erofs_inode *inode)
 	erofs_bdrop(bh, false);
 
 	inode->datalayout = EROFS_INODE_FLAT_PLAIN;
-	tarerofs_blocklist_write(inode->u.i_blkaddr, nblocks, inode->i_ino[1]);
+	tarerofs_blocklist_write(inode->u.i_blkaddr, nblocks, inode->i_ino[1],
+				 alignedsz - inode->i_size);
 	return 0;
 }
 
@@ -1702,7 +1706,7 @@ static int erofs_mkfs_dump_tree(struct erofs_inode *root, bool rebuild,
 {
 	struct erofs_sb_info *sbi = root->sbi;
 	struct erofs_inode *dumpdir = erofs_igrab(root);
-	int err;
+	int err, err2;
 
 	erofs_mark_parent_inode(root, root);	/* rootdir mark */
 	root->next_dirwrite = NULL;
@@ -1713,6 +1717,12 @@ static int erofs_mkfs_dump_tree(struct erofs_inode *root, bool rebuild,
 		list_del(&root->i_hash);
 		erofs_insert_ihash(root);
 	} else if (cfg.c_root_xattr_isize) {
+		if (cfg.c_root_xattr_isize > EROFS_XATTR_ALIGN(
+				UINT16_MAX - sizeof(struct erofs_xattr_entry))) {
+			erofs_err("Invalid configuration for c_root_xattr_isize: %u (too large)",
+				  cfg.c_root_xattr_isize);
+			return -EINVAL;
+		}
 		root->xattr_isize = cfg.c_root_xattr_isize;
 	}
 
@@ -1729,7 +1739,6 @@ static int erofs_mkfs_dump_tree(struct erofs_inode *root, bool rebuild,
 	}
 
 	do {
-		int err;
 		struct erofs_inode *dir = dumpdir;
 		/* used for adding sub-directories in reverse order due to FIFO */
 		struct erofs_inode *head, **last = &head;
@@ -1766,10 +1775,10 @@ static int erofs_mkfs_dump_tree(struct erofs_inode *root, bool rebuild,
 		}
 		*last = dumpdir;	/* fixup the last (or the only) one */
 		dumpdir = head;
-		err = erofs_mkfs_go(sbi, EROFS_MKFS_JOB_DIR_BH,
+		err2 = erofs_mkfs_go(sbi, EROFS_MKFS_JOB_DIR_BH,
 				    &dir, sizeof(dir));
-		if (err)
-			return err;
+		if (err || err2)
+			return err ? err : err2;
 	} while (dumpdir);
 
 	return err;

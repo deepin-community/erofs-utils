@@ -667,6 +667,7 @@ int tarerofs_parse_tar(struct erofs_inode *root, struct erofs_tarfile *tar)
 	unsigned int j, csum, cksum;
 	int ckksum, ret, rem;
 
+	root->dev = tar->dev;
 	if (eh.path)
 		eh.path = strdup(eh.path);
 	if (eh.link)
@@ -808,13 +809,14 @@ out_eot:
 	}
 
 	dataoff = tar->offset;
-	if (!(tar->headeronly_mode || tar->ddtaridx_mode))
-		tar->offset += st.st_size;
+	tar->offset += st.st_size;
 	switch(th->typeflag) {
 	case '0':
 	case '7':
 	case '1':
 		st.st_mode |= S_IFREG;
+		if (tar->headeronly_mode || tar->ddtaridx_mode)
+			tar->offset -= st.st_size;
 		break;
 	case '2':
 		st.st_mode |= S_IFLNK;
