@@ -19,7 +19,7 @@ COMMON_CONF_FLAGS = --enable-lzma --enable-multithreading --with-uuid \
 ifneq ($(SKIP_FUSE2FS),)
 COMMON_CONF_FLAGS +=  --disable-fuse
 else
-COMMON_CONF_FLAGS +=  --enable-fuse
+COMMON_CONF_FLAGS +=  --enable-fuse --enable-static-fuse
 endif
 
 ifneq ($(SKIP_SELINUX),)
